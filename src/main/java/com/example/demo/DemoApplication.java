@@ -1,64 +1,45 @@
 package com.example.demo;
 
-import java.util.List;
-import javax.swing.Spring;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
-import org.springframework.ai.ollama.api.OllamaApi.Message;
-import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
+
+import java.util.Scanner;
 
 @SpringBootApplication
 public class DemoApplication implements CommandLineRunner {
 
+    @Autowired
+    private AgentManager agentManager;
+
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class);
-      }
-    
-      @Autowired
-      OllamaChatModel chatModel;
-    
-      @Override
-      public void run(String... args) throws Exception {
-    
-        /*ChatResponse response = chatModel.call(
-          new Prompt(
-            "Generate the names of 5 famous pirates.",
-            OllamaOptions.create()
-              .withModel("gemma2")
-              .withTemperature(0.4F)
-          ));*/
-    
-        chatModel.stream(new Prompt(
-          "Generate the names of 5 famous pirates.",
-          OllamaOptions.create()
-            .withModel("llama3.2:1b")
-            .withTemperature(0.4d)
-        )).subscribe(chatResponse -> {
-          System.out.print(chatResponse.getResult().getOutput().getContent());
-        });
-    
-        /*response.getResults()
-          .stream()
-          .map(generation -> generation.getOutput().getContent())
-          .forEach(System.out::println);*/
-      }
-    
-      /*@Bean
-      OllamaChatModel ollamaChatModel(@Value("spring.ai.ollama.base-url") String baseUrl) {
-        return new OllamaChatModel(new OllamaApi(baseUrl),
-          OllamaOptions.create()
-            .withModel("gemma")
-            .withTemperature(0.4f));
-      }*/
+        SpringApplication.run(DemoApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        Scanner scanner = new Scanner(System.in);
+        String userInput;
+
+        System.out.println("Начните диалог (для выхода введите 'exit'):");
+
+        while (true) {
+            System.out.print("Вы: ");
+            userInput = scanner.nextLine();
+
+            if ("exit".equalsIgnoreCase(userInput)) {
+                break;
+            }
+
+            // Отправляем ввод пользователя обоим агентам
+            String agent1Response = agentManager.sendToAgent1(userInput);
+            String agent2Response = agentManager.sendToAgent2(userInput);
+
+            System.out.println("Агент 1: " + agent1Response);
+            System.out.println("Агент 2: " + agent2Response);
+        }
+
+        System.out.println("Диалог завершен.");
+    }
 }
