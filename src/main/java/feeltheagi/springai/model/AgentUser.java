@@ -17,7 +17,7 @@ public class AgentUser implements Agent {
     }
 
     public String sendToAgent(String prompt) {
-        System.out.println(prompt);
+        //System.out.println(prompt);
         System.out.println("Enter your prompt (for example @general_chat message for everyone @john message for john):");
         return scanner.nextLine();
     }
