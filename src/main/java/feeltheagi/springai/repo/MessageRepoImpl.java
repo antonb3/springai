@@ -1,7 +1,9 @@
 package feeltheagi.springai.repo;
 
+import feeltheagi.springai.model.Agent;
 import feeltheagi.springai.model.Message;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -11,6 +13,9 @@ import java.util.stream.Collectors;
 @Repository
 @Slf4j
 public class MessageRepoImpl implements MessageRepo {
+
+    @Autowired
+    private AgentRepo agentRepo;
 
     private List<Message> all = new ArrayList<>();
 
@@ -30,14 +35,28 @@ public class MessageRepoImpl implements MessageRepo {
                 .collect(Collectors.toList());
     }
 
-    public List<Message> getAllByReceiverName(String address) {
+    public List<Message> getAllByReceiverName(String receiverName) {
         return all.stream()
                 .filter(
                         message ->
-                                address.toLowerCase().equals(message.getReceiverName().toLowerCase())
-                                || address.toLowerCase().equals("general_chat")
+                                receiverName.toLowerCase().equals(message.getReceiverName().toLowerCase())
+                                || receiverName.toLowerCase().equals("general_chat")
                 )
                 .collect(Collectors.toList());
+    }
+
+    public String getFullprompt(String receiverName) {
+        List<Message> messagesToPrompt = getAllByReceiverName(receiverName);
+        Agent receiver = agentRepo.getOneByName(receiverName);
+        String prompt = receiver.getSystemPrompt() + "\n";
+        for (Message m : messagesToPrompt) {
+            String chat = "direct_chat";
+            if ("general_chat".equalsIgnoreCase(m.getReceiverName())) {
+                chat = "general_chat";
+            }
+            prompt += "["+chat+"] " + m.getAuthor() + ": '" + m.getText() + "'\n";
+        }
+        return prompt;
     }
 
     public void add(Message message) {

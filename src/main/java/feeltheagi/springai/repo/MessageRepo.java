@@ -14,5 +14,7 @@ public interface MessageRepo {
 
     public List<Message> getAllByReceiverName(String receiverName);
 
+    public String getFullprompt(String receiverName);
+
     public void add(Message message);
 }

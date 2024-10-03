@@ -7,12 +7,13 @@ import java.util.Scanner;
 @Data
 public class AgentUser implements Agent {
 
-    private final String name = "user";
+    private final String name;
     private final String systemPrompt;
     private final Scanner scanner = new Scanner(System.in);
 
-    public AgentUser(String systemPrompt) {
+    public AgentUser(String systemPrompt, String name) {
         this.systemPrompt = systemPrompt;
+        this.name = name;
     }
 
     public String sendToAgent(String prompt) {

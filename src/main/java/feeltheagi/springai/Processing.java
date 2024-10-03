@@ -24,9 +24,9 @@ public class Processing {
 
     private Pattern pattern = Pattern.compile("@(\\S+)\\s+([^@]+)");
 
-    public void run() {
+    public void run(String username) {
         try {
-            Agent user = agentRepo.getOneByName("user");
+            Agent user = agentRepo.getOneByName(username);
             String userResponse = user.sendToAgent(user.getSystemPrompt());
             process(user.getName(), userResponse);
         } catch (Exception e) {
@@ -41,31 +41,38 @@ public class Processing {
             }
             Matcher matcher = pattern.matcher(data);
 
+            int count = 0;
             while (matcher.find()) {
-                String address = matcher.group(1);
+                count++;
+                String address = matcher.group(1).trim().replace(",","");
                 String text = matcher.group(2).trim();
                 messageRepo.add(new Message(name, address, text));
-                String chat = "direct_chat";
                 List<Agent> receivers = new ArrayList<>();
 
                 if ("general_chat".equalsIgnoreCase(address)) {
-                    chat = "general_chat";
                     receivers.addAll(agentRepo.getAll());
                 } else {
-                    receivers.add(agentRepo.getOneByName(address));
+                    Agent receiver = agentRepo.getOneByName(address);
+                    if (receiver != null) {
+                        receivers.add(receiver);
+                    }
                 }
 
                 for (Agent receiver : receivers) {
                     if (!name.equalsIgnoreCase(receiver.getName())) {
-                        List<Message> messagesToPrompt = messageRepo.getAllByReceiverName(receiver.getName());
-                        String prompt = receiver.getSystemPrompt() + "\n";
-                        for (Message m : messagesToPrompt) {
-                            prompt += "["+chat+"] " + m.getAuthor() + ": '" + m.getText() + "'\n";
-                        }
+                        String prompt = messageRepo.getFullprompt(receiver.getName());
                         String response = receiver.sendToAgent(prompt);
                         process(receiver.getName(), response);
                     }
                 }
+            }
+
+            if (count < 1) {
+                Agent receiver = agentRepo.getOneByName(name);
+                String prompt = messageRepo.getFullprompt(receiver.getName());
+                prompt += "[System] System: 'You must start your message by mentioning one of the other agents (users) or chats with the @ symbol'\n";
+                String response = receiver.sendToAgent(prompt);
+                process(receiver.getName(), response);
             }
         } catch (Exception e) {
             Utils.logException(e);
