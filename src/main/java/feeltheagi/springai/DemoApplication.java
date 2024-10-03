@@ -62,10 +62,11 @@ public class DemoApplication implements CommandLineRunner {
                 }
             }
             systemPrompt += "You can send messages to several chats at once, for example: " +
-                    "@general_chat message to everyone @"+username+" message to "+username+"'\n";
+                    "@general_chat message to everyone @"+username+" message to "+username+"'\n" +
+                    "If you just want to mention someone in your message, use just their name without @! For example, '@person1 i tell something about person2'";
             agentRepo.add(new AgentOllama(
                     "http://localhost:11434",
-                    "llama3.2:1b",
+                    "llama3.2:3b",
                     systemPrompt,
                     a));
         }
