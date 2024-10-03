@@ -21,6 +21,7 @@ public class Processing {
     MessageRepo messageRepo;
     @Autowired
     AgentRepo agentRepo;
+    private Boolean isWork = true;
 
     private Pattern pattern = Pattern.compile("@(\\S+)\\s+([^@]+)");
 
@@ -35,52 +36,56 @@ public class Processing {
     }
 
     public String process(String name, String data) {
-        try {
-            if ("exit".equalsIgnoreCase(data)) {
-                exit();
-            }
-            Matcher matcher = pattern.matcher(data);
+        if (isWork) {
+            try {
+                if ("exit".equalsIgnoreCase(data)) {
+                    exit();
+                    return "";
+                }
+                Matcher matcher = pattern.matcher(data);
 
-            int count = 0;
-            while (matcher.find()) {
-                count++;
-                String address = matcher.group(1).trim().replace(",","");
-                String text = matcher.group(2).trim();
-                messageRepo.add(new Message(name, address, text));
-                List<Agent> receivers = new ArrayList<>();
+                int count = 0;
+                while (matcher.find()) {
+                    count++;
+                    String address = matcher.group(1).trim().replace(",", "").replace(":", "");
+                    String text = matcher.group(2).trim();
+                    messageRepo.add(new Message(name, address, text));
+                    List<Agent> receivers = new ArrayList<>();
 
-                if ("general_chat".equalsIgnoreCase(address)) {
-                    receivers.addAll(agentRepo.getAll());
-                } else {
-                    Agent receiver = agentRepo.getOneByName(address);
-                    if (receiver != null) {
-                        receivers.add(receiver);
+                    if ("general_chat".equalsIgnoreCase(address)) {
+                        receivers.addAll(agentRepo.getAll());
+                    } else {
+                        Agent receiver = agentRepo.getOneByName(address);
+                        if (receiver != null) {
+                            receivers.add(receiver);
+                        }
+                    }
+
+                    for (Agent receiver : receivers) {
+                        if (!name.equalsIgnoreCase(receiver.getName())) {
+                            String prompt = messageRepo.getFullprompt(receiver.getName());
+                            String response = receiver.sendToAgent(prompt);
+                            process(receiver.getName(), response);
+                        }
                     }
                 }
 
-                for (Agent receiver : receivers) {
-                    if (!name.equalsIgnoreCase(receiver.getName())) {
-                        String prompt = messageRepo.getFullprompt(receiver.getName());
-                        String response = receiver.sendToAgent(prompt);
-                        process(receiver.getName(), response);
-                    }
+                if (count < 1) {
+                    Agent receiver = agentRepo.getOneByName(name);
+                    String prompt = messageRepo.getFullprompt(receiver.getName());
+                    prompt += "[System] System: 'You must start your message by mentioning one of the other agents (users) or chats with the @ symbol'\n";
+                    String response = receiver.sendToAgent(prompt);
+                    process(receiver.getName(), response);
                 }
+            } catch (Exception e) {
+                Utils.logException(e);
             }
-
-            if (count < 1) {
-                Agent receiver = agentRepo.getOneByName(name);
-                String prompt = messageRepo.getFullprompt(receiver.getName());
-                prompt += "[System] System: 'You must start your message by mentioning one of the other agents (users) or chats with the @ symbol'\n";
-                String response = receiver.sendToAgent(prompt);
-                process(receiver.getName(), response);
-            }
-        } catch (Exception e) {
-            Utils.logException(e);
         }
         return "";
     }
 
     public void exit() {
         System.out.println("End");
+        isWork = false;
     }
 }
