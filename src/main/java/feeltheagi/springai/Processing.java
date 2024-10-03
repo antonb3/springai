@@ -36,7 +36,7 @@ public class Processing {
 
     public String process(String name, String data) {
         try {
-            if ("user".equalsIgnoreCase(name) && "exit".equalsIgnoreCase(data)) {
+            if ("exit".equalsIgnoreCase(data)) {
                 exit();
             }
             Matcher matcher = pattern.matcher(data);
